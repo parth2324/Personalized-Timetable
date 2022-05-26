@@ -1,12 +1,9 @@
 # Personalized-Timetable
 
-Further development in progress.
-Current stable version : 1.0.
+Development : v2 practically complete; Add greedy-range mode for acceleration.
 
-makes a personalized timetable based on selected lectures from U of T Calendar.
+Versions : 3
 
-change line 15 to add your course codes.
-add favourable times at line 14 (array: favourableTimes) in 24hr format.
-add personal priorities via priorities[], ith index refers to priority of ith element of courses[].
+Makes a personalized timetable for given courses from U of T Calendar.
 
-compile and run (no args, stable: JDK 8.1)
+Check version readme.md for more info.
