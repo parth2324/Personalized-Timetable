@@ -3,13 +3,13 @@ waiting for initialization to complete for getting read courses..
 reading csc148 data from server..
 reading mat137 data from server..
 reading eco101 data from server..
-read mat137 data from server in 0.626 seconds.
+read mat137 data from server in 0.527 seconds.
 detecting, cleaning and integerizing lectures for mat137..
-detected, cleaned and integerized all lectures for mat137 in 0.001 seconds.
-read eco101 data from server in 0.634 seconds.
+detected, cleaned and integerized all lectures for mat137 in 0.0 seconds.
+read eco101 data from server in 0.606 seconds.
 detecting, cleaning and integerizing lectures for eco101..
 detected, cleaned and integerized all lectures for eco101 in 0.001 seconds.
-read csc148 data from server in 1.388 seconds.
+read csc148 data from server in 1.352 seconds.
 detecting, cleaning and integerizing lectures for csc148..
 detected, cleaned and integerized all lectures for csc148 in 0.001 seconds.
 COURSE_MASK_SIZE: 2 bits -> 0b11
@@ -22,63 +22,63 @@ START_MASK_SIZE: 12 bits -> 0b111111111111000000000000000
 END_MASK_SIZE: 12 bits -> 0b111111111111000000000000000000000000000
 CLEAN_MASK_SIZE: 12 bits -> 0b111111111111
 ADDRESS_SIZE: 39 bits
-initialized scheduler in 1.389 seconds.
+initialized scheduler in 1.355 seconds.
 Courses read:  ['csc148S', 'mat137Y', 'eco101F', 'eco101S']
 initializing course priority map..
 initialized course priority map in 0.0 seconds.
 initializing time scores for all lectures..
-initialized time scores for all lectures in 0.001 seconds.
+initialized time scores for all lectures in 0.002 seconds.
 starting to make schedule..
 percentage complete : 0.0%
 attempting to add csc148 to schedule..
-added csc148 to schedule in 1.739 seconds.
+added csc148 to schedule in 1.714 seconds.
 percentage complete : 33.333%
 attempting to add mat137 to schedule..
-added mat137 to schedule in 1.181 seconds.
+added mat137 to schedule in 1.418 seconds.
 percentage complete : 66.667%
 attempting to add eco101 to schedule..
-added eco101 to schedule in 24.597 seconds.
-successfully made a schedule in 27.516 seconds.
+added eco101 to schedule in 25.399 seconds.
+successfully made a schedule in 28.532 seconds.
 ------------------------------------------------------------
 fall schedule :
 Monday :
     lectures :
-        mat137Y-LEC-0401[12:0, 13:0]
+        mat137Y-LEC-0401[12:00, 13:00]
 Tuesday :
     lectures :
-        mat137Y-LEC-0401[12:0, 13:0]
+        mat137Y-LEC-0401[12:00, 13:00]
 Wednesday :
     tutorials :
-        mat137Y-TUT-0501[12:0, 13:0]
+        mat137Y-TUT-0501[12:00, 13:00]
 Thursday :
     lectures :
-        mat137Y-LEC-0401[12:0, 13:0]
+        mat137Y-LEC-0401[12:00, 13:00]
     tutorials :
-        eco101F-TUT-0403[11:0, 12:0]
+        eco101F-TUT-0403[11:00, 12:00]
 Friday :
     lectures :
-        eco101F-LEC-0401[12:0, 14:0]
+        eco101F-LEC-0401[12:00, 14:00]
 ------------------------------------------------------------
 winter schedule :
 Monday :
     lectures :
-        mat137Y-LEC-0401[12:0, 13:0]
+        mat137Y-LEC-0401[12:00, 13:00]
 Tuesday :
     lectures :
-        mat137Y-LEC-0401[12:0, 13:0]
+        mat137Y-LEC-0401[12:00, 13:00]
 Wednesday :
     lectures :
-        csc148S-LEC-0201[14:0, 16:0]
+        csc148S-LEC-0201[14:00, 16:00]
     tutorials :
-        mat137Y-TUT-0501[12:0, 13:0]
+        mat137Y-TUT-0501[12:00, 13:00]
 Thursday :
     lectures :
-        mat137Y-LEC-0401[12:0, 13:0]
+        mat137Y-LEC-0401[12:00, 13:00]
 Friday :
     lectures :
-        csc148S-LEC-0201[14:0, 15:0]
+        csc148S-LEC-0201[14:00, 15:00]
     tutorials :
-        csc148S-TUT-0701[11:0, 13:0]
+        csc148S-TUT-0701[11:00, 13:00]
 ------------------------------------------------------------
 number of fall courses : 2
 number of winter courses : 2
