@@ -1,4 +1,4 @@
-# Python Scheduler v1
+# U of T Course Scheduler v1
 
 Python based optimal scheduler with non-competitive scoring system, handles eveything given a valid set of courses.
 
