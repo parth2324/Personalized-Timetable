@@ -1,3 +1,5 @@
+# U of T Course Scheduler v0
+
 Java based pseudo-greedy scheduler, a session (F / S) at a time, no tutorials / practicals.
 
 Modify line 15 for course codes (priorities[i] = priority of crcs[i], thus modify accordingly).
