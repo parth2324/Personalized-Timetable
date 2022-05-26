@@ -1,4 +1,8 @@
+# Python Scheduler v1
+
 Python based optimal scheduler with non-competitive scoring system, handles eveything given a valid set of courses.
+
+Uses recursive multi-cyclic-stage CDRS (conflict detection-resolution system) core, multithreaded and fixed size binary addressing.
 
 In main(), editable variables:
 
