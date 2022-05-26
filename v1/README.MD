@@ -1,4 +1,4 @@
-Python based optimal scheduler, handles eveything given a valid set of courses.
+Python based optimal scheduler with non-competitive scoring system, handles eveything given a valid set of courses.
 
 In main(), editable variables:
 
