@@ -6,7 +6,7 @@ In main(), editable variables:
 2) timePrefnsFall : fall time preferences in 24hr format.
 3) timePrefnsWinter : winter time preferences in 24hr format.
 4) balanced : True if balanced work load wanted in the week.
-5) crcPrefns : all courses with session (A => F and S) in descending priority.
+5) crcPrefns : all courses with session (see below for 'A' type) in descending priority.
 6) '2021' at line 989 with year to read data from.
 
 It is advised that you check the course sessions first, and modify the values correctly.
