@@ -939,7 +939,19 @@ class Scheduler:
                 lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
                 start = (addr & START_MASK) >> START_SHFT
                 end = (addr & END_MASK) >> END_SHFT
-                print(f'{eight}{crc}{session}-{lec}[{int(start/100)}:{start%100}, {int(end/100)}:{end%100}]')
+                start_min = start % 100
+                end_min = end % 100
+                start_time = None
+                end_time = None
+                if start_min == 0:
+                    start_time = f'{int(start/100)}:00'
+                else:
+                    start_time = f'{int(start/100)}:{start_min}'
+                if end_min == 0:
+                    end_time = f'{int(end/100)}:00'
+                else:
+                    end_time = f'{int(end/100)}:{end_time}'
+                print(f'{eight}{crc}{session}-{lec}[{start_time}, {end_time}]')
             if len(state[0][i][1]) > 0:
                 print(f'{four}tutorials :')
             for addr in state[0][i][1]:
@@ -949,7 +961,19 @@ class Scheduler:
                 lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
                 start = (addr & START_MASK) >> START_SHFT
                 end = (addr & END_MASK) >> END_SHFT
-                print(f'{eight}{crc}{session}-{lec}[{int(start/100)}:{start%100}, {int(end/100)}:{end%100}]')
+                start_min = start % 100
+                end_min = end % 100
+                start_time = None
+                end_time = None
+                if start_min == 0:
+                    start_time = f'{int(start/100)}:00'
+                else:
+                    start_time = f'{int(start/100)}:{start_min}'
+                if end_min == 0:
+                    end_time = f'{int(end/100)}:00'
+                else:
+                    end_time = f'{int(end/100)}:{end_time}'
+                print(f'{eight}{crc}{session}-{lec}[{start_time}, {end_time}]')
         print(seperator)
         print('winter schedule :')
         for i in RANGE_SEVEN:
@@ -964,7 +988,19 @@ class Scheduler:
                 lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
                 start = (addr & START_MASK) >> START_SHFT
                 end = (addr & END_MASK) >> END_SHFT
-                print(f'{eight}{crc}{session}-{lec}[{int(start/100)}:{start%100}, {int(end/100)}:{end%100}]')
+                start_min = start % 100
+                end_min = end % 100
+                start_time = None
+                end_time = None
+                if start_min == 0:
+                    start_time = f'{int(start/100)}:00'
+                else:
+                    start_time = f'{int(start/100)}:{start_min}'
+                if end_min == 0:
+                    end_time = f'{int(end/100)}:00'
+                else:
+                    end_time = f'{int(end/100)}:{end_time}'
+                print(f'{eight}{crc}{session}-{lec}[{start_time}, {end_time}]')
             if len(state[1][i][1]) > 0:
                 print(f'{four}tutorials :')
             for addr in state[1][i][1]:
@@ -974,7 +1010,19 @@ class Scheduler:
                 lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
                 start = (addr & START_MASK) >> START_SHFT
                 end = (addr & END_MASK) >> END_SHFT
-                print(f'{eight}{crc}{session}-{lec}[{int(start/100)}:{start%100}, {int(end/100)}:{end%100}]')
+                start_min = start % 100
+                end_min = end % 100
+                start_time = None
+                end_time = None
+                if start_min == 0:
+                    start_time = f'{int(start/100)}:00'
+                else:
+                    start_time = f'{int(start/100)}:{start_min}'
+                if end_min == 0:
+                    end_time = f'{int(end/100)}:00'
+                else:
+                    end_time = f'{int(end/100)}:{end_time}'
+                print(f'{eight}{crc}{session}-{lec}[{start_time}, {end_time}]')
         print(seperator)
         print('number of fall courses :', state[2][3])
         print('number of winter courses :', state[2][4])
