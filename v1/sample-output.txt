@@ -1,0 +1,80 @@
+starting scheduler initialization..
+waiting for initialization to complete for getting read courses..
+reading csc148 data from server..
+reading mat137 data from server..
+reading eco101 data from server..
+read mat137 data from server in 0.608 seconds.
+detecting, cleaning and integerizing lectures for mat137..
+detected, cleaned and integerized all lectures for mat137 in 0.0 seconds.
+read csc148 data from server in 1.379 seconds.
+detecting, cleaning and integerizing lectures for csc148..
+detected, cleaned and integerized all lectures for csc148 in 0.001 seconds.
+read eco101 data from server in 1.563 seconds.
+detecting, cleaning and integerizing lectures for eco101..
+detected, cleaned and integerized all lectures for eco101 in 0.001 seconds.
+COURSE_MASK_SIZE: 2 bits -> 0b11
+SESSION_MASK_SIZE: 2 bits -> 0b1100
+TYPE_MASK_SIZE: 1 bit -> 0b10000
+LECTURE_MASK_SIZE: 6 bits -> 0b11111100000
+ASYNC_MASK_SIZE: 1 bit -> 0b100000000000
+DAY_MASK_SIZE: 3 bits -> 0b111000000000000
+START_MASK_SIZE: 12 bits -> 0b111111111111000000000000000
+END_MASK_SIZE: 12 bits -> 0b111111111111000000000000000000000000000
+CLEAN_MASK_SIZE: 12 bits -> 0b111111111111
+ADDRESS_SIZE: 39 bits
+initialized scheduler in 1.569 seconds.
+Courses read:  ['csc148S', 'mat137Y', 'eco101F', 'eco101S']
+initializing course priority map..
+initialized course priority map in 0.0 seconds.
+initializing time scores for all lectures..
+initialized time scores for all lectures in 0.001 seconds.
+starting to make schedule..
+percentage complete : 0.0%
+attempting to add csc148 to schedule..
+added csc148 to schedule in 1.567 seconds.
+percentage complete : 33.333%
+attempting to add mat137 to schedule..
+added mat137 to schedule in 5.417 seconds.
+percentage complete : 66.667%
+attempting to add eco101 to schedule..
+added eco101 to schedule in 9.212 seconds.
+successfully made a schedule in 16.197 seconds.
+fall schedule :
+Monday
+    lectures :
+        mat137-LEC-0401[1200, 1300],
+Tuesday
+    lectures :
+        mat137-LEC-0401[1200, 1300],
+    tutorials :
+        mat137-TUT-0501[1200, 1300],
+Thursday
+    lectures :
+        mat137-LEC-0401[1200, 1300],
+    tutorials :
+        eco101-TUT-0402[1100, 1200],
+Friday
+    lectures :
+        eco101-LEC-0401[1200, 1400],
+------------------------------------------------------------
+winter schedule :
+Monday
+    lectures :
+        mat137-LEC-0401[1200, 1300],
+Tuesday
+    lectures :
+        csc148-LEC-0301[1400, 1600],
+        mat137-LEC-0401[1200, 1300],
+    tutorials :
+        mat137-TUT-0501[1200, 1300],
+Thursday
+    lectures :
+        csc148-LEC-0301[1400, 1500],
+        mat137-LEC-0401[1200, 1300],
+    tutorials :
+        csc148-TUT-0701[1100, 1300],
+fall week weights : [100, 100, 100, 200, 200, 0, 0]
+winter week weights : [100, 300, 100, 200, 200, 0, 0]
+number of fall courses : 2
+number of winter courses : 2
+schedule score : 226575.0
