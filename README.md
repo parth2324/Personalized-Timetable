@@ -1,5 +1,7 @@
 # Personalized-Timetable
 
+Working on : lecture overlooked bug
+
 Development : v2 practically complete; Add greedy-range mode for acceleration.
 
 Versions : 3
