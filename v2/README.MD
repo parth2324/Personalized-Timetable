@@ -1,4 +1,8 @@
+# U of T Course Scheduler v2
+
 Python based optimal scheduler with competitive scoring system under default weights, handles eveything given a valid set of courses.
+
+Uses internal-recursive multi-cyclic-stage CDRS (conflict detection-resolution system) core, multithreaded and fixed size binary addressing with standby resource cloners.
 
 In main(), editable variables:
 
