@@ -1040,7 +1040,7 @@ class Scheduler:
             if state[2][1][i] == 0:
                 continue
             print(f'{four}{DAYS_LONG[i]} : {state[2][1][i] / 100} hrs')
-            total += state[2][1][i] / 100
+            total_ += state[2][1][i] / 100
         print(f'winter working day average : {round(total_ / 5, PRECISION)} hrs/day')
         print(f'normal load percentage : {round(((total + total_) * 25) / (state[2][3] + state[2][4]), PRECISION)}% of 4 hrs/crc-week')
         print(f'schedule score : {round(state[2][2], PRECISION)}')
