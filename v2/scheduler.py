@@ -348,7 +348,7 @@ class Scheduler:
                         return self._state_iterator_fall(self.data[crc][ID] + (1 << TYPE_SHFT), state, None, lec_to_ignore, tut_to_ignore)
                 elif do_lec:
                     return self._state_iterator_fall(self.data[crc][ID], state, None, lec_to_ignore, tut_to_ignore)
-        elif Y in self.data[crc]:
+        elif Y in self.data[crc]: # hard iterizable !
             result = NEW_STATE_ITERATOR_PLACE_HOLDER
             new_state = state
             if do_lec:
@@ -356,13 +356,12 @@ class Scheduler:
                 lec_fall = self._state_iterator_fall(self.data[crc][ID] + (2 << SESS_SHFT), state, None, to_ignore, tut_to_ignore)
                 if lec_fall[0] is None:
                     return lec_fall
-                to_ignore.append(lec_fall[1])
                 new_state = self._try_push_winter(lec_fall[1], lec_fall[0], tut_to_ignore, to_ignore[:])
                 while new_state is None:
+                    to_ignore.append(lec_fall[1])
                     lec_fall = self._state_iterator_fall(self.data[crc][ID] + (2 << SESS_SHFT), state, None, to_ignore, tut_to_ignore)
                     if lec_fall[0] is None:
                         return lec_fall
-                    to_ignore.append(lec_fall[1])
                     new_state = self._try_push_winter(lec_fall[1], lec_fall[0], tut_to_ignore, to_ignore[:])
                 result = [new_state, lec_fall[1]]
             if do_tut:
@@ -370,13 +369,12 @@ class Scheduler:
                 tut_fall = self._state_iterator_fall(self.data[crc][ID] + (6 << SESS_SHFT), new_state, None, lec_to_ignore, to_ignore)
                 if tut_fall[0] is None:
                     return tut_fall
-                to_ignore.append(tut_fall[1])
                 new_state_ = self._try_push_winter(tut_fall[1], tut_fall[0], to_ignore, lec_to_ignore[:])
                 while new_state_ is None:
+                    to_ignore.append(tut_fall[1])
                     tut_fall = self._state_iterator_fall(self.data[crc][ID] + (6 << SESS_SHFT), new_state, None, lec_to_ignore, to_ignore)
                     if tut_fall[0] is None:
                         return tut_fall
-                    to_ignore.append(tut_fall[1])
                     new_state_ = self._try_push_winter(tut_fall[1], tut_fall[0], to_ignore, lec_to_ignore[:])
                 if result[0] == None:
                     result = [new_state_, tut_fall[1]]
@@ -921,103 +919,84 @@ class Scheduler:
                 week_load[lec_data[stmp][DAY]] -= lec_data[stmp][LEN]
                 state[1][lec_data[stmp][DAY]][type_ind].remove(addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT))
 
-    def print_schedule(self, state: Tuple = None) -> None:
+    def print_schedule(self, state: Tuple[Tuple, Tuple, List] = None) -> None:
         if state == None:
             state = self._state
-        print("------------------------------------------------------------\nfall schedule :")
+        four = "    "
+        eight = "        "
+        seperator = "------------------------------------------------------------"
+        print(seperator)
+        print('fall schedule :')
         for i in RANGE_SEVEN:
-            lecs = ""
+            if len(state[0][i][0]) > 0 or len(state[0][i][1]) > 0:
+                print(f'{DAYS_LONG[i]} :')
+            if len(state[0][i][0]) > 0:
+                print(f'{four}lectures :')
             for addr in state[0][i][0]:
                 crc = self.data[ID][addr & CRC_MASK]
                 session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
-                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]     # hierarchical decoding of address
+                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]
                 lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
                 start = (addr & START_MASK) >> START_SHFT
                 end = (addr & END_MASK) >> END_SHFT
-                lecs += f"{crc}-{lec}[{start}, {end}],\n        "
-            if lecs != "":
-                print(f'{DAYS_LONG[i]}\n    lectures :\n       ', lecs.strip())
-            lecs = ""
+                print(f'{eight}{crc}{session}-{lec}[{int(start/100)}:{start%100}, {int(end/100)}:{end%100}]')
+            if len(state[0][i][1]) > 0:
+                print(f'{four}tutorials :')
             for addr in state[0][i][1]:
                 crc = self.data[ID][addr & CRC_MASK]
                 session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
-                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]     # hierarchical decoding of address
+                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]
                 lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
                 start = (addr & START_MASK) >> START_SHFT
                 end = (addr & END_MASK) >> END_SHFT
-                lecs += f"{crc}-{lec}[{start}, {end}],\n        "
-            if lecs != "":
-                print(f'    tutorials :\n       ', lecs.strip())
-        lecs = ""
-        for addr in state[3][0]:
-            crc = self.data[ID][addr & CRC_MASK]
-            session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
-            type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]     # hierarchical decoding of address
-            lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
-            start = (addr & START_MASK) >> START_SHFT
-            end = (addr & END_MASK) >> END_SHFT
-            lecs += f"{crc}-{lec}[{start}, {end}], "
-        if lecs != "":
-            print("asynchronous lectures and tutorials :", lecs)
-        print('------------------------------------------------------------\nwinter schedule :')
+                print(f'{eight}{crc}{session}-{lec}[{int(start/100)}:{start%100}, {int(end/100)}:{end%100}]')
+        print(seperator)
+        print('winter schedule :')
         for i in RANGE_SEVEN:
-            lecs = ""
+            if len(state[1][i][0]) > 0 or len(state[1][i][1]) > 0:
+                print(f'{DAYS_LONG[i]} :')
+            if len(state[1][i][0]) > 0:
+                print(f'{four}lectures :')
             for addr in state[1][i][0]:
                 crc = self.data[ID][addr & CRC_MASK]
                 session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
-                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]     # hierarchical decoding of address
+                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]
                 lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
                 start = (addr & START_MASK) >> START_SHFT
                 end = (addr & END_MASK) >> END_SHFT
-                lecs += f"{crc}-{lec}[{start}, {end}],\n        "
-            if lecs != "":
-                print(f'{DAYS_LONG[i]}\n    lectures :\n       ', lecs.strip())
-            lecs = ""
+                print(f'{eight}{crc}{session}-{lec}[{int(start/100)}:{start%100}, {int(end/100)}:{end%100}]')
+            if len(state[1][i][1]) > 0:
+                print(f'{four}tutorials :')
             for addr in state[1][i][1]:
                 crc = self.data[ID][addr & CRC_MASK]
                 session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
-                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]     # hierarchical decoding of address
+                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]
                 lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
                 start = (addr & START_MASK) >> START_SHFT
                 end = (addr & END_MASK) >> END_SHFT
-                lecs += f"{crc}-{lec}[{start}, {end}],\n        "
-            if lecs != "":
-                print(f'    tutorials :\n       ', lecs.strip())
-        lecs = ""
-        for addr in state[3][1]:
-            crc = self.data[ID][addr & CRC_MASK]
-            session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
-            type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]     # hierarchical decoding of address
-            lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
-            start = (addr & START_MASK) >> START_SHFT
-            end = (addr & END_MASK) >> END_SHFT
-            lecs += f"{crc}-{lec}[{start}, {end}], "
-        if lecs != "":
-            print("asynchronous lectures and tutorials :", lecs)
-        print('------------------------------------------------------------\n')
+                print(f'{eight}{crc}{session}-{lec}[{int(start/100)}:{start%100}, {int(end/100)}:{end%100}]')
+        print(seperator)
         print('number of fall courses :', state[2][3])
         print('number of winter courses :', state[2][4])
-        times = ""
         total = 0.0
+        print(f'fall week load :')
         for i in RANGE_SEVEN:
             if state[2][0][i] == 0:
                 continue
-            times += f"{DAYS_LONG[i]} : {state[2][0][i] / 100} hours\n    "
+            print(f'{four}{DAYS_LONG[i]} : {state[2][0][i] / 100} hrs')
             total += state[2][0][i] / 100
-        print(f'fall week load :\n   ', times.strip())
         print(f'fall working day average : {round(total / 5, PRECISION)} hrs/day')
-        times = ""
         total_ = 0.0
+        print(f'winter week load :')
         for i in RANGE_SEVEN:
             if state[2][1][i] == 0:
                 continue
-            times += f"{DAYS_LONG[i]} : {state[2][1][i] / 100} hours\n    "
-            total_ += state[2][1][i] / 100
-        print(f'winter week load :\n   ', times.strip())
+            print(f'{four}{DAYS_LONG[i]} : {state[2][1][i] / 100} hrs')
+            total += state[2][1][i] / 100
         print(f'winter working day average : {round(total_ / 5, PRECISION)} hrs/day')
         print(f'normal load percentage : {round(((total + total_) * 25) / (state[2][3] + state[2][4]), PRECISION)}% of 4 hrs/crc-week')
-        print(f'schedule score : {round(state[2][2], PRECISION)}\n------------------------------------------------------------')
-
+        print(f'schedule score : {round(state[2][2], PRECISION)}')
+        print(seperator)
 
 class Concurrent_Runner(threading.Thread):
     return_value: Optional[Any]
