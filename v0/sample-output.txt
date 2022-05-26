@@ -1,0 +1,161 @@
+Retrieved data for course csc148S successfully in 7.02 seconds (1 of 2).
+Retrieved data for course mat137Y successfully in 1.544 seconds (2 of 2).
+Course ID : 0
+Course name : Introduction to Computer Science (CSC148H1).
+Priority level : 0.
+Breadth Category : The Physical and Mathematical Universes (5).
+Description :-
+Abstract data types and data structures for implementing them. Linked data structures. Encapsulation and information-hiding. Object-oriented
+programming. Specifications. Analyzing the efficiency of programs. Recursion. This course assumes programming experience as provided by
+CSC108H1. Students who already have this background may consult the Computer Science Undergraduate Office for advice about skipping CSC108H1.
+Practical (P) sections consist of supervised work in the computing laboratory. These sections are offered when facilities are available, and
+attendance is required. NOTE: Students may go to their college to drop down from CSC148H1 to CSC108H1. See above for the drop down deadline.
+Schedule for lecture set '0101', ID : 1 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+13:00 :                         |'''''''|                       |'''''''|
+
+14:00 :                         |       |                       |.......|
+
+15:00 :                         |.......|
+
+Schedule for lecture set '0102', ID : 4 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+13:00 :                         |'''''''|                       |'''''''|
+
+14:00 :                         |       |                       |.......|
+
+15:00 :                         |.......|
+
+Schedule for lecture set '0201', ID : 7 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+15:00 :                         |'''''''|                       |'''''''|
+
+16:00 :                         |       |                       |.......|
+
+17:00 :                         |.......|
+
+Schedule for lecture set '0301', ID : 10 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+13:00 :                                         |'''''''|                       |'''''''|
+
+14:00 :                                         |       |                       |.......|
+
+15:00 :                                         |.......|
+
+Schedule for lecture set '0401', ID : 13 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+15:00 :                                         |'''''''|
+
+16:00 :                                         |       |                       |'''''''|
+
+17:00 :                                         |.......|                       |.......|
+
+Schedule for lecture set '0402', ID : 16 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+15:00 :                                         |'''''''|
+
+16:00 :                                         |       |                       |'''''''|
+
+17:00 :                                         |.......|                       |.......|
+
+Schedule for lecture set '5101', ID : 19 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+18:00 :                         |'''''''|
+
+19:00 :                         |       |
+
+20:00 :                         |       |
+
+21:00 :                         |.......|
+
+
+Course ID : 1
+Course name : Calculus with Proofs (MAT137Y1).
+Priority level : 1.
+Breadth Category : The Physical and Mathematical Universes (5).
+Description :-
+A conceptual approach for students interest in theoretical foundations of mathematics. Attention is given to computational aspects as well
+as problem-solving techniques. Limits and continuity, mean value theorem, elementary transcendental functions including trigonometric
+functions, inverse function theorem, differentiation, integration, fundamental theorem of calculus, Taylor's theorem, sequences and series, power
+series, and applications. This course will be useful for students interested in learning theoretical calculus and proofs in relation to
+future studies in computer science, economics, mathematics, physics, and statistics.
+Schedule for lecture set '0101', ID : 21 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+09:00 :         |'''''''|       |'''''''|                       |'''''''|
+
+10:00 :         |.......|       |.......|                       |.......|
+
+Schedule for lecture set '0102', ID : 25 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+09:00 :         |'''''''|       |'''''''|                       |'''''''|
+
+10:00 :         |.......|       |.......|                       |.......|
+
+Schedule for lecture set '0201', ID : 29 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+10:00 :         |'''''''|       |'''''''|                       |'''''''|
+
+11:00 :         |.......|       |.......|                       |.......|
+
+Schedule for lecture set '0301', ID : 33 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+10:00 :         |'''''''|                       |'''''''|                       |'''''''|
+
+11:00 :         |.......|                       |.......|                       |.......|
+
+Schedule for lecture set '0401', ID : 37 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+12:00 :         |'''''''|       |'''''''|                       |'''''''|
+
+13:00 :         |.......|       |.......|                       |.......|
+
+Schedule for lecture set '0501', ID : 41 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+13:00 :         |'''''''|                       |'''''''|       |'''''''|
+
+14:00 :         |.......|                       |.......|       |.......|
+
+Schedule for lecture set '0601', ID : 45 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+14:00 :                         |'''''''|       |'''''''|       |'''''''|
+
+15:00 :                         |.......|       |.......|       |.......|
+
+Schedule for lecture set '5101', ID : 50 :-
+                  MONDAY         TUESDAY        WEDNESDAY       THURSDAY         FRIDAY         SATURDAY         SUNDAY
+
+20:00 :         |'''''''|       |'''''''|                       |'''''''|
+
+21:00 :         |.......|       |.......|                       |.......|
+
+
+Customize timesets for courses ? (y/n)
+n
+Favoured times : 12.
+
+Schedule :-
+                        MONDAY                 TUESDAY                WEDNESDAY               THURSDAY                 FRIDAY                 SATURDAY                 SUNDAY       
+
+ 12:00 : MAT137Y1-04 |'''''''''| MAT137Y1-04 |'''''''''|                         MAT137Y1-04 |'''''''''|
+
+ 13:00 : MAT137Y1-04 |.........| CSC - MAT   |~~~~~~~~~|                         CSC - MAT   |~~~~~~~~~|
+
+ 14:00 :                         CSC148H1-01 |         |                         CSC148H1-01 |.........|
+
+ 15:00 :                         CSC148H1-01 |.........|
+
+List of courses used : CSC148H1-01, MAT137Y1-04.
