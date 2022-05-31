@@ -1062,7 +1062,7 @@ if __name__ == '__main__':
         sch.print_schedule()
     # abstraction levels : add_course -> state_iterator -> try_push, accelerate state_iterator only, since, add_course ensures compatibility and try_push ensure validity.
     
-    # TODO: replace actual removal with phantom flag, corrected in add_course cloner, improving removal.
+    # TODO: state -> day -> type -> addr -> lec_data_dict, improve removal complexity and remove decoding headers (both already small though).
     # TODO: add acceleration, add greedy mode (estimated score range based)
     # TODO: sort times when printing schedule.
     # TODO: override session relative priority with balance score.
