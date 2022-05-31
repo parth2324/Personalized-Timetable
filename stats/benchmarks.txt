@@ -1,0 +1,40 @@
+NOTE: random runs, not multiple iterations average.
+
+v2:
+
+percentage complete : 0.0%
+attempting to add mat137 to schedule..
+added mat137 to schedule in 0.902 seconds.
+percentage complete : 33.333%
+attempting to add csc148 to schedule..
+added csc148 to schedule in 7.567 seconds.
+percentage complete : 66.667%
+attempting to add eco101 to schedule..
+added eco101 to schedule in 58.074 seconds.
+successfully made a schedule in 66.553 seconds.
+
+v3: (state lightened and A concurrent)
+
+percentage complete : 0.0%
+attempting to push mat137 to schedule so far..
+mat137 can be pushed in schedule, found in 0.802 seconds.
+percentage complete : 33.333%
+attempting to push csc148 to schedule so far..
+csc148 can be pushed in schedule, found in 7.174 seconds.
+percentage complete : 66.667%
+attempting to push eco101 to schedule so far..
+eco101 can be pushed in schedule, found in 110.999 seconds.
+successfully made a schedule in 118.975 seconds.
+
+bleeding-edge: (dictionary implementation)
+
+percentage complete : 0.0%
+attempting to push mat137 to schedule so far..
+mat137 can be pushed in schedule, found in 0.793 seconds.
+percentage complete : 33.333%
+attempting to push csc148 to schedule so far..
+csc148 can be pushed in schedule, found in 5.359 seconds.
+percentage complete : 66.667%
+attempting to push eco101 to schedule so far..
+eco101 can be pushed in schedule, found in 7.791 seconds.
+successfully made a schedule in 13.945 seconds.
