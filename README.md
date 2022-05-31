@@ -1,10 +1,10 @@
 # Personalized-Timetable
 
-Working on : lecture overlooked bug
+Working on : acceleration: greedy range mode.
 
-Development : v2 practically complete; Add greedy-range mode for acceleration.
+Development : v2 stable, bleeding-edge usable.
 
-Versions : 3
+Versions : 4
 
 Makes a personalized timetable for given courses from U of T Calendar.
 
