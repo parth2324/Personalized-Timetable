@@ -1068,14 +1068,14 @@ if __name__ == '__main__':
 
     # -- editable begin --
 
-    crcs = ['csc148S', 'mat137Y', 'eco101A']
+    crcs = ['mat137Y', 'csc148S', 'eco101A']
     allow_async = False
     sch = Scheduler(crcs, allow_async, 2022)
     timePrefnsFall = [1200]
     timePrefnsWinter = [1200]
     balanced = True
     weights = [0.3, 0.3] # weekscore ~ 7500 in balanced
-    crcPrefns = ['csc148S', 'mat137Y', 'eco101S', 'eco101F'] # descending priority.
+    crcPrefns = ['mat137Y', 'csc148S', 'eco101S', 'eco101F'] # descending priority.
 
     # -- editable end --
 
