@@ -1070,7 +1070,7 @@ if __name__ == '__main__':
 
     crcs = ['csc148S', 'mat137Y', 'eco101A']
     allow_async = False
-    sch = Scheduler(crcs, allow_async, 2021)
+    sch = Scheduler(crcs, allow_async, 2022)
     timePrefnsFall = [1200]
     timePrefnsWinter = [1200]
     balanced = True

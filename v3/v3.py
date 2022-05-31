@@ -58,8 +58,8 @@ ASYNC_MAP_R = [False, True]
 DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 DAYS_SHORT = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
 RANGE_SEVEN = [0, 1, 2, 3, 4, 5, 6]
-STATE_PLACE_HOLDER = [0, 0, [0, 0, 0]]
-STATE_ITERATOR_PLACE_HOLDER = [[0, 0, [0, 0, 0]]]
+STATE_PLACE_HOLDER = [None, None, None, None, 0]
+STATE_ITERATOR_PLACE_HOLDER = [[None, 0, None, None, 0]]
 NEW_STATE_ITERATOR_PLACE_HOLDER = [None]
 SLEEP = 0.001
 TRUE = True
@@ -70,15 +70,42 @@ PRECISION = 3
 
 # -- editable end --
 
+def _cloner(comm: List, state: List[Tuple, Tuple, List], lec_to_ignore: List[int]) -> None:
+    while comm[0]:  # [needed, ready, state_clone, lec_to_ignore_clone]
+        if comm[1]:
+            time.sleep(SLEEP)
+            continue
+        comm[2] = [((state[0][0][0].copy(), state[0][0][1].copy()),
+                    (state[0][1][0].copy(), state[0][1][1].copy()),
+                    (state[0][2][0].copy(), state[0][2][1].copy()),
+                    (state[0][3][0].copy(), state[0][3][1].copy()),
+                    (state[0][4][0].copy(), state[0][4][1].copy()),
+                    (state[0][5][0].copy(), state[0][5][1].copy()),
+                    (state[0][6][0].copy(), state[0][6][1].copy())),
+                   ((state[1][0][0].copy(), state[1][0][1].copy()),
+                    (state[1][1][0].copy(), state[1][1][1].copy()),
+                    (state[1][2][0].copy(), state[1][2][1].copy()),
+                    (state[1][3][0].copy(), state[1][3][1].copy()),
+                    (state[1][4][0].copy(), state[1][4][1].copy()),
+                    (state[1][5][0].copy(), state[1][5][1].copy()),
+                    (state[1][6][0].copy(), state[1][6][1].copy())),
+                   state[2][:], state[3][:], state[4]]
+        comm[3] = lec_to_ignore[:]
+        comm[1] = True
+
+
 class Scheduler:
     # LEC_TUT_CONFLICT_POLICY = LEC_OVER_TUT
-    # TODO: add greedy mode (estimated score range based)
     data: Dict
     _initialized: bool
     _priority_map: Dict[str, Dict[str, int]]
     _week_weight: float
     _week_balance_invert: int
-    _state: Tuple[Tuple, Tuple, List]
+    _state: List[Tuple, Tuple, List]
+    _num_fall_crcs: int
+    _num_winter_crcs: int
+    _async_fall_crcs: List[int]
+    _async_winter_crcs: List[int]
 
     def __init__(self, crcs: List[str], allow_async: Union[List[bool], bool] = True, year: int = time.strptime(time.ctime()).tm_year) -> None:
         self.data = {ID: []}
@@ -86,9 +113,13 @@ class Scheduler:
         self._priority_map = {}
         self._week_weight = -1
         self._week_balance_invert = -1
-        self._state = ((([], []), ([], []), ([], []), ([], []), ([], []), ([], []), ([], [])), # fall_schedule : day -> type -> crcs
+        self._state = [(([], []), ([], []), ([], []), ([], []), ([], []), ([], []), ([], [])), # fall_schedule : day -> type -> crcs
                        (([], []), ([], []), ([], []), ([], []), ([], []), ([], []), ([], [])), # winter_schedule
-                       [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], 0, 0, 0], ([], [])) # [fall_week_load, winter_weekload, state_score, #fall_crcs, #winter_crcs], (async_fall_crcs, async_winter_crcs)
+                       [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], 0] # fall_week_load, winter_weekload, state_score
+        self._num_fall_crcs = 0
+        self._num_winter_crcs = 0
+        self._async_fall_crcs = []
+        self._async_winter_crcs = []
         workers = []
         i = 0
         if  isinstance(allow_async, bool):
@@ -145,10 +176,12 @@ class Scheduler:
         print(f'initialized scheduler in {round(time.time() - start_time, PRECISION)} seconds.')
 
     def _read_data(self, crc: str, year: int, id: int, not_allow_async: bool = True) -> None:
-        sect = crc[len(crc) - 1].upper()
-        if sect == 'A': # equaivalent to any, can take both!
-            sect = ''
-        crc = crc[0:len(crc) - 1]
+        sect = '' # equaivalent to any, can take both sessions!
+        if len(crc) == 7:
+            sect = crc[len(crc) - 1].upper()
+            crc = crc[0:len(crc) - 1]
+            if sect == 'A':
+                sect = ''
         self.data[ID].append(crc)
         self.data[crc] = {}
         self.data[crc][ID] = id
@@ -307,7 +340,7 @@ class Scheduler:
         count = 0.0
         for crc in crcPrefns:
             print(f'percentage complete : {round(100 * (count / len(self.data[ID])), PRECISION)}%')
-            print(f'attempting to add {crc} to schedule..')
+            print(f'attempting to push {crc} to schedule so far..')
             crc_time = time.time()
             result = self._add_course(crc, self._state, [], [])
             if result[0] is None:
@@ -316,21 +349,21 @@ class Scheduler:
                 return False
             self._state = result[0]
             if SESS_MAP_R[(result[1] & SESS_MASK) >> SESS_SHFT] == F:
-                self._state[2][3] += 1
+                self._num_fall_crcs += 1
             elif SESS_MAP_R[(result[1] & SESS_MASK) >> SESS_SHFT] == S:
-                self._state[2][4] += 1
+                self._num_winter_crcs += 1
             else:
-                self._state[2][3] += 1
-                self._state[2][4] += 1
-            print(f'added {crc} to schedule in {round(time.time() - crc_time, PRECISION)} seconds.')
+                self._num_winter_crcs += 1
+                self._num_fall_crcs += 1
+            print(f'{crc} can be pushed in schedule, found in {round(time.time() - crc_time, PRECISION)} seconds.')
             count += 1
         print(f'successfully made a schedule in {round(time.time() - start_time, PRECISION)} seconds.')
         return True
 
-    def _add_course(self, crc: str, state: Tuple[Tuple, Tuple, List], lec_to_ignore: List[int], tut_to_ignore: List[int], do_lec: bool = True, do_tut: bool = True) -> List:    
+    def _add_course(self, crc: str, state: List[Tuple, Tuple, List], lec_to_ignore: List[int], tut_to_ignore: List[int], do_lec: bool = True, do_tut: bool = True, do_fall: bool = True, do_winter: bool = True) -> List:    
         winter = S in self.data[crc]
         fall = F in self.data[crc]
-        if winter != fall:
+        if winter != fall or do_fall != do_winter:
             if winter:
                 return self._add_course_winter(crc, state, lec_to_ignore, tut_to_ignore, do_lec, do_tut)
             else:
@@ -367,7 +400,7 @@ class Scheduler:
                     result = [new_state_, tut_fall[1]]
                 else:
                     result[0] = new_state_
-                    result.insert(1, tut_fall[1])
+                    result.insert(1, tut_fall[1]) # strict onion-like layering syntax
             return result
         else: # session = 'A'
             result_fall = NEW_STATE_ITERATOR_PLACE_HOLDER
@@ -377,16 +410,16 @@ class Scheduler:
             fall_worker.start()
             winter_worker.start()
             fall_priority = None
-            if state[2][3] < state[2][4]:
+            if self._num_fall_crcs < self._num_winter_crcs:
                 fall_priority = True
-            elif state[2][3] > state[2][4]:
+            elif self._num_fall_crcs > self._num_winter_crcs:
                 fall_priority = False
             else:
                 fall_hrs = 0
                 winter_hrs = 0
                 for i in RANGE_SEVEN:
-                    fall_hrs += state[2][0][i]
-                    winter_hrs += state[2][1][i]
+                    fall_hrs += state[2][i]
+                    winter_hrs += state[3][i]
                 if fall_hrs < winter_hrs:
                     fall_priority = True
                 elif fall_hrs > winter_hrs:
@@ -394,31 +427,23 @@ class Scheduler:
             if self._week_balance_invert == 0:
                 fall_priority = not fall_priority
             while fall_worker.is_alive() or winter_worker.is_alive():
-                if not fall_worker.is_alive():
-                    result_fall = fall_worker.join()
-                    if result_fall[0] is None:
-                        return winter_worker.join()
-                    if (fall_priority is not None) and fall_priority:
-                        return result_fall
-                    result_winter = winter_worker.join()
-                if not winter_worker.is_alive():
-                    result_winter = winter_worker.join()
-                    if result_winter[0] is None:
-                        return fall_worker.join()
-                    if (fall_priority is not None) and (not fall_priority):
-                        return result_winter
-                    result_fall = fall_worker.join()
                 time.sleep(SLEEP)
+            result_fall = fall_worker.join()
+            result_winter = winter_worker.join()
             if result_fall[0] == None:
                 return result_winter
             elif result_winter[0] == None:
                 return result_fall
-            elif result_fall[0][2][2] > result_winter[0][2][2]:
+            elif (fall_priority is not None) and fall_priority:
+                return result_fall
+            elif (fall_priority is not None) and not fall_priority:
+                return result_winter
+            elif result_fall[0][4] > result_winter[0][4]:
                 return result_fall
             else:
                 return result_winter
 
-    def _add_course_fall(self, crc: str, state: Tuple[Tuple, Tuple, List], lec_to_ignore: List[int], tut_to_ignore: List[int], do_lec: bool, do_tut: bool) -> List:
+    def _add_course_fall(self, crc: str, state: List[Tuple, Tuple, List], lec_to_ignore: List[int], tut_to_ignore: List[int], do_lec: bool, do_tut: bool) -> List:
         if self.data[crc][F][HAS_TUT] and do_tut:
             if do_lec:
                 return self._state_iterator_fall(self.data[crc][ID], state, 
@@ -428,7 +453,7 @@ class Scheduler:
         elif do_lec:
             return self._state_iterator_fall(self.data[crc][ID], state, None, lec_to_ignore, tut_to_ignore)            
 
-    def _add_course_winter(self, crc: str, state: Tuple[Tuple, Tuple, List], lec_to_ignore: List[int], tut_to_ignore: List[int], do_lec: bool, do_tut: bool) -> List:
+    def _add_course_winter(self, crc: str, state: List[Tuple, Tuple, List], lec_to_ignore: List[int], tut_to_ignore: List[int], do_lec: bool, do_tut: bool) -> List:
         if self.data[crc][S][HAS_TUT] and do_tut:
             if do_lec:
                 return self._state_iterator_winter(self.data[crc][ID] + (1 << SESS_SHFT), state, 
@@ -439,7 +464,7 @@ class Scheduler:
             return self._state_iterator_winter(self.data[crc][ID] + (1 << SESS_SHFT), state, None, lec_to_ignore, tut_to_ignore)
 
     # multi-cyclic-stage CDRS (conflict detection-resolution-system), core, parent must handle the concurrency aspects.
-    def _try_push_fall(self, addr: int, state: Tuple[Tuple, Tuple, List], tut_attempts: List[int], lec_attempts: List[int]) -> Optional[Tuple[Tuple, Tuple, List]]:
+    def _try_push_fall(self, addr: int, state: List[Tuple, Tuple, List], tut_attempts: List[int], lec_attempts: List[int]) -> Optional[List[Tuple, Tuple, List]]:
         crc = self.data[ID][addr & CRC_MASK]
         session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
         type_ind = (addr & TYPE_MASK) >> TYPE_SHFT
@@ -451,11 +476,11 @@ class Scheduler:
         stage = 1
         while TRUE:
             if ASYNC_MAP_R[(addr & ASYNC_MASK) >> ASYNC_SHFT]:
-                week_load = state[2][0]
+                week_load = state[2]
                 avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
                 week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
-                state[2][2] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
-                state[3][0].append(addr & CLEAN_MASK)
+                state[4] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
+                self._async_fall_crcs.append(addr & CLEAN_MASK)
                 return state
             elif stage == 1:
                 min_priority_tut_conflict = None
@@ -468,6 +493,8 @@ class Scheduler:
                            self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]] < min_priority:
                             min_priority = self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]]
                             min_priority_tut_conflict = conflict_addr
+                        if lec_data[stmp][END] <= ((conflict_addr & END_MASK) >> END_SHFT):
+                            break
                 if min_priority_tut_conflict is None:
                     attempts = tut_attempts[:]
                     stg2_attempts = []
@@ -475,7 +502,7 @@ class Scheduler:
                     continue
                 attempts.append(min_priority_tut_conflict & CLEAN_MASK)
                 self._remove_lecture(min_priority_tut_conflict, state)
-                result = self._add_course(self.data[ID][conflict_addr & CRC_MASK], state, lec_attempts, attempts, do_lec=False)
+                result = self._add_course(self.data[ID][conflict_addr & CRC_MASK], state, lec_attempts, attempts, do_lec=False, do_winter=False)
                 if result[0] is None: # conflicting tutorial removed in process for stage 2
                     stage = 2
                     continue
@@ -518,14 +545,16 @@ class Scheduler:
                            self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]] < min_priority:
                             min_priority = self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]]
                             min_priority_lec_conflict = conflict_addr
+                        if lec_data[stmp][END] <= ((conflict_addr & END_MASK) >> END_SHFT):
+                            break
                 if min_priority_lec_conflict is None:
-                    week_load = state[2][0]
+                    week_load = state[2]
                     for stmp in lec_data:
                         week_load[lec_data[stmp][DAY]] += lec_data[stmp][LEN]
                         state[0][lec_data[stmp][DAY]][type_ind].append(addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT))
                     avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
                     week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
-                    state[2][2] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
+                    state[4] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
                     return state
                 lec_attempts.append(min_priority_lec_conflict & CLEAN_MASK)
                 self._remove_lecture(min_priority_lec_conflict, state)
@@ -548,14 +577,14 @@ class Scheduler:
                     else:
                         result = self._add_course(self.data[ID][lec_crc], state, lec_attempts, attempts, do_tut=False)
                 else:
-                    result = self._add_course(self.data[ID][min_priority_lec_conflict & CRC_MASK], state, lec_attempts, attempts, do_tut=False)
+                    result = self._add_course(self.data[ID][min_priority_lec_conflict & CRC_MASK], state, lec_attempts, attempts)
                 if result[0] is None:
                     return None
                 state = result[0]
                 stage = 1
                 continue
 
-    def _try_push_winter(self, addr: int, state: Tuple[Tuple, Tuple, List], tut_attempts: List[int], lec_attempts: List[int]) -> Optional[Tuple[Tuple, Tuple, List]]:
+    def _try_push_winter(self, addr: int, state: List[Tuple, Tuple, List], tut_attempts: List[int], lec_attempts: List[int]) -> Optional[List[Tuple, Tuple, List]]:
         crc = self.data[ID][addr & CRC_MASK]
         session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
         type_ind = (addr & TYPE_MASK) >> TYPE_SHFT
@@ -567,11 +596,11 @@ class Scheduler:
         stage = 1
         while TRUE:
             if ASYNC_MAP_R[(addr & ASYNC_MASK) >> ASYNC_SHFT]:
-                week_load = state[2][1]
+                week_load = state[3]
                 avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
                 week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
-                state[2][2] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
-                state[3][1].append(addr & CLEAN_MASK)
+                state[4] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
+                self._async_winter_crcs.append(addr & CLEAN_MASK)
                 return state
             elif stage == 1:
                 min_priority_tut_conflict = None
@@ -584,6 +613,8 @@ class Scheduler:
                            self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]] < min_priority:
                             min_priority = self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]]
                             min_priority_tut_conflict = conflict_addr
+                        if lec_data[stmp][END] <= ((conflict_addr & END_MASK) >> END_SHFT):
+                            break
                 if min_priority_tut_conflict is None:
                     attempts = tut_attempts[:]
                     stg2_attempts = []
@@ -591,7 +622,7 @@ class Scheduler:
                     continue
                 attempts.append(min_priority_tut_conflict & CLEAN_MASK)
                 self._remove_lecture(min_priority_tut_conflict, state)
-                result = self._add_course(self.data[ID][conflict_addr & CRC_MASK], state, lec_attempts, attempts, do_lec=False)
+                result = self._add_course(self.data[ID][conflict_addr & CRC_MASK], state, lec_attempts, attempts, do_lec=False, do_fall=False)
                 if result[0] is None: # conflicting tutorial removed in process for stage 2
                     stage = 2
                     continue
@@ -632,14 +663,16 @@ class Scheduler:
                            self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]] < min_priority:
                             min_priority = self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]]
                             min_priority_lec_conflict = conflict_addr
+                        if lec_data[stmp][END] <= ((conflict_addr & END_MASK) >> END_SHFT):
+                            break
                 if min_priority_lec_conflict is None:
-                    week_load = state[2][1]
+                    week_load = state[3]
                     for stmp in lec_data:
                         week_load[lec_data[stmp][DAY]] += lec_data[stmp][LEN]
                         state[1][lec_data[stmp][DAY]][type_ind].append(addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT))
                     avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
                     week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
-                    state[2][2] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
+                    state[4] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
                     return state
                 lec_attempts.append(min_priority_lec_conflict & CLEAN_MASK)
                 self._remove_lecture(min_priority_lec_conflict, state)
@@ -662,7 +695,7 @@ class Scheduler:
                     else:
                         result = self._add_course(self.data[ID][lec_crc], state, lec_attempts, attempts, do_tut=False)
                 else:
-                    result = self._add_course(self.data[ID][min_priority_lec_conflict & CRC_MASK], state, lec_attempts, attempts, do_tut=False)
+                    result = self._add_course(self.data[ID][min_priority_lec_conflict & CRC_MASK], state, lec_attempts, attempts)
                 if result[0] is None:
                     return None
                 state = result[0]
@@ -670,7 +703,7 @@ class Scheduler:
                 continue
 
     # hard lecture removal helper (NO_CHECK_POLICY):
-    def _remove_lecture(self, addr: int, state: Tuple[Tuple, Tuple, List]) -> None:
+    def _remove_lecture(self, addr: int, state: List[Tuple, Tuple, List]) -> None:
         addr = addr & CLEAN_MASK
         crc = self.data[ID][addr & CRC_MASK]
         session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
@@ -679,39 +712,40 @@ class Scheduler:
         lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
         if ASYNC_MAP_R[(addr & ASYNC_MASK) >> ASYNC_SHFT]:
             if not session == S:
-                week_load = state[2][0]
+                week_load = state[2]
                 avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
                 week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
-                state[2][2] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
-                state[3][0].remove(addr)
+                state[4] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
+                self._async_fall_crcs.remove(addr)
             if not session == F:
-                week_load = state[2][1]
+                week_load = state[3]
                 avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
                 week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
-                state[2][2] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
-                state[3][1].remove(addr)
+                state[4] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
+                self._async_winter_crcs.remove(addr)
             return
         lec_data = self.data[crc][session][type][lec][SCHEDULE]
         if not session == S:
-            week_load = state[2][0]
+            week_load = state[2]
             avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
             week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
-            state[2][2] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
+            state[4] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
             for stmp in lec_data:
                 week_load[lec_data[stmp][DAY]] -= lec_data[stmp][LEN]
                 state[0][lec_data[stmp][DAY]][type_ind].remove(addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT))
         if not session == F:
-            week_load = state[2][1]
+            week_load = state[3]
             avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
             week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
-            state[2][2] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
+            state[4] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
             for stmp in lec_data:
                 week_load[lec_data[stmp][DAY]] -= lec_data[stmp][LEN]
                 state[1][lec_data[stmp][DAY]][type_ind].remove(addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT))
 
-    def print_schedule(self, state: Tuple[Tuple, Tuple, List] = None) -> None:
+    def print_schedule(self, state: List[Tuple, Tuple, List] = None) -> None:
         if state == None:
             state = self._state
+        print(state)
         four = "    "
         eight = "        "
         seperator = "------------------------------------------------------------"
@@ -764,6 +798,14 @@ class Scheduler:
                 else:
                     end_time = f'{int(end/100)}:{end_time}'
                 print(f'{eight}{crc}{session}-{lec}[{start_time}, {end_time}]')
+            if len(self._async_fall_crcs) > 0:
+                print(f'{four}async lectures:')
+            for addr in self._async_fall_crcs:
+                crc = self.data[ID][addr & CRC_MASK]
+                session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
+                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]
+                lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
+                print(f'{eight}{crc}{session}-{lec}')
         print(seperator)
         print('winter schedule :')
         for i in RANGE_SEVEN:
@@ -813,56 +855,41 @@ class Scheduler:
                 else:
                     end_time = f'{int(end/100)}:{end_time}'
                 print(f'{eight}{crc}{session}-{lec}[{start_time}, {end_time}]')
+            if len(self._async_winter_crcs) > 0:
+                print(f'{four}async lectures:')
+            for addr in self._async_winter_crcs:
+                crc = self.data[ID][addr & CRC_MASK]
+                session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
+                type = TYPE_MAP_R[(addr & TYPE_MASK) >> TYPE_SHFT]
+                lec = self.data[crc][session][type][ID][(addr & LEC_MASK) >> LEC_SHFT]
+                print(f'{eight}{crc}{session}-{lec}')
         print(seperator)
-        print('number of fall courses :', state[2][3])
-        print('number of winter courses :', state[2][4])
+        print('number of fall courses :', self._num_fall_crcs)
+        print('number of winter courses :', self._num_winter_crcs)
         total = 0.0
         print(f'fall week load :')
         for i in RANGE_SEVEN:
-            if state[2][0][i] == 0:
+            if state[2][i] == 0:
                 continue
-            print(f'{four}{DAYS_LONG[i]} : {state[2][0][i] / 100} hrs')
-            total += state[2][0][i] / 100
+            print(f'{four}{DAYS_LONG[i]} : {state[2][i] / 100} hrs')
+            total += state[2][i] / 100
         print(f'fall working day average : {round(total / 5, PRECISION)} hrs/day')
         total_ = 0.0
         print(f'winter week load :')
         for i in RANGE_SEVEN:
-            if state[2][1][i] == 0:
+            if state[3][i] == 0:
                 continue
-            print(f'{four}{DAYS_LONG[i]} : {state[2][1][i] / 100} hrs')
-            total_ += state[2][1][i] / 100
+            print(f'{four}{DAYS_LONG[i]} : {state[3][i] / 100} hrs')
+            total_ += state[3][i] / 100
         print(f'winter working day average : {round(total_ / 5, PRECISION)} hrs/day')
-        print(f'normal load percentage : {round(((total + total_) * 25) / (state[2][3] + state[2][4]), PRECISION)}% of 4 hrs/crc-week')
-        print(f'schedule score : {round(state[2][2], PRECISION)}')
+        print(f'load percentage : {round(((total + total_) * 25) / (self._num_fall_crcs + self._num_winter_crcs), PRECISION)}% of 4 hrs/crc-week')
+        print(f'schedule score : {round(state[4], PRECISION)}')
         print(seperator)
 
     # this function is much more powerful. Can iterate concurrently on any depth. Workers size 18 for depth 4 took ~ 100 seconds.
-    def _state_iterator_fall(self, addr: int, state: Tuple[Tuple, Tuple, List], args: Optional[Tuple], lec_to_ignore: List[int], tut_to_ignore: List[int]) -> List:
+    def _state_iterator_fall(self, addr: int, state: List[Tuple, Tuple, List], args: Optional[Tuple], lec_to_ignore: List[int], tut_to_ignore: List[int]) -> List:
         comm = [True, False, None, None] # [needed, ready, state_clone, lec_to_ignore_clone]
-        def init_cloner(comm: List, state: Tuple[Tuple, Tuple, List], lec_to_ignore: List[int]) -> None:
-            while comm[0]:
-                if comm[1]:
-                    time.sleep(SLEEP)
-                    continue
-                comm[2] = (((state[0][0][0][:], state[0][0][1][:]),
-                            (state[0][1][0][:], state[0][1][1][:]),
-                            (state[0][2][0][:], state[0][2][1][:]),
-                            (state[0][3][0][:], state[0][3][1][:]),
-                            (state[0][4][0][:], state[0][4][1][:]),
-                            (state[0][5][0][:], state[0][5][1][:]),
-                            (state[0][6][0][:], state[0][6][1][:])),
-                           ((state[1][0][0][:], state[1][0][1][:]),
-                            (state[1][1][0][:], state[1][1][1][:]),
-                            (state[1][2][0][:], state[1][2][1][:]),
-                            (state[1][3][0][:], state[1][3][1][:]),
-                            (state[1][4][0][:], state[1][4][1][:]),
-                            (state[1][5][0][:], state[1][5][1][:]),
-                            (state[1][6][0][:], state[1][6][1][:])),
-                           [state[2][0][:], state[2][1][:], state[2][2], state[2][3], state[2][4]],
-                           (state[3][0][:], state[3][1][:]))
-                comm[3] = lec_to_ignore[:]
-                comm[1] = True
-        threading.Thread(target=init_cloner, args=(comm, state, lec_to_ignore), daemon=True).start()
+        threading.Thread(target=_cloner, args=(comm, state, lec_to_ignore), daemon=True).start()
         workers = []
         crc = self.data[ID][addr & CRC_MASK]
         session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
@@ -876,17 +903,18 @@ class Scheduler:
             lec_addr = addr + (dict[lec][ID] << LEC_SHFT) + (ASYNC_MAP[dict[lec][ASYNC]] << ASYNC_SHFT)
             if lec_addr in to_ignore:
                 continue
-            while not comm[1]:
+            while not comm[1]: # clone not ready
                 time.sleep(SLEEP)
             workers.append(Concurrent_Runner(self._try_push_fall, (lec_addr, comm[2], tut_to_ignore, comm[3]), lec_addr))
             comm[1] = False
             workers[i].start()
             i += 1
         comm[0] = False
-        best_state = STATE_PLACE_HOLDER
         best_lec_addr = -1
+        best_state = STATE_ITERATOR_PLACE_HOLDER
         chk = False
         if args is None:
+            best_state = STATE_PLACE_HOLDER
             while not chk:
                 chk = True
                 for worker in workers:
@@ -896,14 +924,13 @@ class Scheduler:
                     end_state = worker.join()
                     if end_state is None:
                         continue
-                    if end_state[2][2] > best_state[2][2]:
+                    if end_state[4] > best_state[4]:
                         best_state = end_state
                         best_lec_addr = worker.ID
                 time.sleep(SLEEP)
             if best_lec_addr == -1:
                 return [None]
             return [best_state, best_lec_addr]
-        best_state = STATE_ITERATOR_PLACE_HOLDER
         while not chk:
             chk = True
             for worker in workers:
@@ -916,7 +943,7 @@ class Scheduler:
                 result = self._state_iterator_fall(args[0], end_state, args[1], lec_to_ignore, tut_to_ignore)
                 if result[0] is None:
                     continue
-                if result[0][2][2] > best_state[0][2][2]:
+                if result[0][4] > best_state[0][4]:
                     best_state = result
                     best_lec_addr = worker.ID
             time.sleep(SLEEP)
@@ -925,32 +952,9 @@ class Scheduler:
         best_state.append(best_lec_addr)
         return best_state
 
-    def _state_iterator_winter(self, addr: int, state: Tuple[Tuple, Tuple, List], args: Optional[Tuple], lec_to_ignore: List[int], tut_to_ignore: List[int]) -> List:
+    def _state_iterator_winter(self, addr: int, state: List[Tuple, Tuple, List], args: Optional[Tuple], lec_to_ignore: List[int], tut_to_ignore: List[int]) -> List:
         comm = [True, False, None, None, None] # [needed, ready, state_clone, lec_to_ignore_clone]
-        def init_cloner(comm: List, state: Tuple[Tuple, Tuple, List], lec_to_ignore: List[int]) -> None:
-            while comm[0]:
-                if comm[1]:
-                    time.sleep(SLEEP)
-                    continue
-                comm[2] = (((state[0][0][0][:], state[0][0][1][:]),
-                            (state[0][1][0][:], state[0][1][1][:]),
-                            (state[0][2][0][:], state[0][2][1][:]),
-                            (state[0][3][0][:], state[0][3][1][:]),
-                            (state[0][4][0][:], state[0][4][1][:]),
-                            (state[0][5][0][:], state[0][5][1][:]),
-                            (state[0][6][0][:], state[0][6][1][:])),
-                           ((state[1][0][0][:], state[1][0][1][:]),
-                            (state[1][1][0][:], state[1][1][1][:]),
-                            (state[1][2][0][:], state[1][2][1][:]),
-                            (state[1][3][0][:], state[1][3][1][:]),
-                            (state[1][4][0][:], state[1][4][1][:]),
-                            (state[1][5][0][:], state[1][5][1][:]),
-                            (state[1][6][0][:], state[1][6][1][:])),
-                           [state[2][0][:], state[2][1][:], state[2][2], state[2][3], state[2][4]],
-                           (state[3][0][:], state[3][1][:]))
-                comm[3] = lec_to_ignore[:]
-                comm[1] = True
-        threading.Thread(target=init_cloner, args=(comm, state, lec_to_ignore), daemon=True).start()
+        threading.Thread(target=_cloner, args=(comm, state, lec_to_ignore), daemon=True).start()
         workers = []
         crc = self.data[ID][addr & CRC_MASK]
         session = SESS_MAP_R[(addr & SESS_MASK) >> SESS_SHFT]
@@ -971,10 +975,11 @@ class Scheduler:
             workers[i].start()
             i += 1
         comm[0] = False
-        best_state = STATE_PLACE_HOLDER
         best_lec_addr = -1
+        best_state = STATE_ITERATOR_PLACE_HOLDER
         chk = False
         if args is None:
+            best_state = STATE_PLACE_HOLDER
             while not chk:
                 chk = True
                 for worker in workers:
@@ -984,14 +989,13 @@ class Scheduler:
                     end_state = worker.join()
                     if end_state is None:
                         continue
-                    if end_state[2][2] > best_state[2][2]:
+                    if end_state[4] > best_state[4]:
                         best_state = end_state
                         best_lec_addr = worker.ID
                 time.sleep(SLEEP)
             if best_lec_addr == -1:
                 return [None]
             return [best_state, best_lec_addr]
-        best_state = STATE_ITERATOR_PLACE_HOLDER
         while not chk:
             chk = True
             for worker in workers:
@@ -1004,7 +1008,7 @@ class Scheduler:
                 result = self._state_iterator_winter(args[0], end_state, args[1], lec_to_ignore, tut_to_ignore)
                 if result[0] is None:
                     continue
-                if result[0][2][2] > best_state[0][2][2]:
+                if result[0][4] > best_state[0][4]:
                     best_state = result
                     best_lec_addr = worker.ID
             time.sleep(SLEEP)
@@ -1036,14 +1040,14 @@ if __name__ == '__main__':
 
     # -- editable begin --
 
-    crcs = ['phy250S', 'phy252S', 'phy256F']
+    crcs = ['csc148S', 'eco101A']
     allow_async = False
     sch = Scheduler(crcs, allow_async, 2022)
     timePrefnsFall = [1200]
     timePrefnsWinter = [1200]
     balanced = True
     weights = [0.3, 0.3] # weekscore ~ 7500 in balanced
-    crcPrefns = ['phy250S', 'phy252S', 'phy256F'] # descending priority.
+    crcPrefns = ['csc148S', 'eco101S', 'eco101F'] # descending priority.
 
     # -- editable end --
 
@@ -1054,7 +1058,9 @@ if __name__ == '__main__':
     # abstraction levels : add_course -> state_iterator -> try_push, accelerate state_iterator only, since, add_course ensures compatibility and try_push ensure validity.
     # optimized try_push : decoded address global to all stages.
     # optimized add_course for 'A' : fall and winter addition attempt concurrent.
+    # no session specified -> default to A.
+    # lightened full_state by opening env.
     # TODO: state -> day -> type -> addr -> lec_data_dict, improve removal complexity and remove decoding headers (both already small though).
-    # TODO: add acceleration.
+    # TODO: add acceleration, add greedy mode (estimated score range based)
     # TODO: sort times when printing schedule.
     # TODO: override session relative priority with balance score.
