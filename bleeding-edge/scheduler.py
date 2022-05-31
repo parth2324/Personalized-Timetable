@@ -363,7 +363,7 @@ class Scheduler:
     def _add_course(self, crc: str, state: List[Tuple, Tuple, List], lec_to_ignore: List[int], tut_to_ignore: List[int], do_lec: bool = True, do_tut: bool = True, do_fall: bool = True, do_winter: bool = True) -> List:    
         winter = S in self.data[crc]
         fall = F in self.data[crc]
-        if winter != fall or do_fall != do_winter:
+        if winter != fall:
             if winter:
                 return self._add_course_winter(crc, state, lec_to_ignore, tut_to_ignore, do_lec, do_tut)
             else:
@@ -403,6 +403,11 @@ class Scheduler:
                     result.insert(1, tut_fall[1]) # strict onion-like layering syntax
             return result
         else: # session = 'A'
+            if do_fall != do_winter:
+                if do_winter:
+                    return self._add_course_winter(crc, state, lec_to_ignore, tut_to_ignore, do_lec, do_tut)
+                else:
+                    return self._add_course_fall(crc, state, lec_to_ignore, tut_to_ignore, do_lec, do_tut)
             result_fall = NEW_STATE_ITERATOR_PLACE_HOLDER
             result_winter = NEW_STATE_ITERATOR_PLACE_HOLDER
             fall_worker = Concurrent_Runner(self._add_course_fall, (crc, state, lec_to_ignore, tut_to_ignore, do_lec, do_tut), -1)
@@ -1040,14 +1045,14 @@ if __name__ == '__main__':
 
     # -- editable begin --
 
-    crcs = ['csc148S', 'eco101A']
+    crcs = ['mat137Y', 'csc148S', 'eco101A']
     allow_async = False
     sch = Scheduler(crcs, allow_async, 2022)
     timePrefnsFall = [1200]
     timePrefnsWinter = [1200]
     balanced = True
     weights = [0.3, 0.3] # weekscore ~ 7500 in balanced
-    crcPrefns = ['csc148S', 'eco101S', 'eco101F'] # descending priority.
+    crcPrefns = ['mat137Y', 'csc148S', 'eco101S', 'eco101F'] # descending priority.
 
     # -- editable end --
 
