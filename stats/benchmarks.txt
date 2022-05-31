@@ -4,14 +4,14 @@ v2:
 
 percentage complete : 0.0%
 attempting to add mat137 to schedule..
-added mat137 to schedule in 0.902 seconds.
+added mat137 to schedule in 0.703 seconds.
 percentage complete : 33.333%
 attempting to add csc148 to schedule..
-added csc148 to schedule in 7.567 seconds.
+added csc148 to schedule in 23.404 seconds.
 percentage complete : 66.667%
 attempting to add eco101 to schedule..
-added eco101 to schedule in 58.074 seconds.
-successfully made a schedule in 66.553 seconds.
+added eco101 to schedule in 46.216 seconds.
+successfully made a schedule in 70.329 seconds.
 
 v3: (state lightened and A concurrent)
 

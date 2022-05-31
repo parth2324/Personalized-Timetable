@@ -113,8 +113,8 @@ class Scheduler:
         self._priority_map = {}
         self._week_weight = -1
         self._week_balance_invert = -1
-        self._state = [(({}, {}), ({}, {}), ({}, {}), ({}, {}), ({}, {}), ({}, {}), ({}, {})), # fall_schedule : day -> type -> crcs
-                       (({}, {}), ({}, {}), ({}, {}), ({}, {}), ({}, {}), ({}, {}), ({}, {})), # winter_schedule
+        self._state = [(([], []), ([], []), ([], []), ([], []), ([], []), ([], []), ([], [])), # fall_schedule : day -> type -> crcs
+                       (([], []), ([], []), ([], []), ([], []), ([], []), ([], []), ([], [])), # winter_schedule
                        [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], 0] # fall_week_load, winter_weekload, state_score
         self._num_fall_crcs = 0
         self._num_winter_crcs = 0
@@ -288,13 +288,13 @@ class Scheduler:
                 max_size = max(len(self.data[crc][Y][MEETINGS][ID]), max(len(self.data[crc][Y][TUTORIALS][ID]), max_size))
         return (int(1 + math.floor(math.log2(len(self.data[ID])))), int(1 + math.floor(math.log2(max_size))))
 
-    def _overlaps(self, stmp1: Dict, stmp2: Dict) -> bool:
-        if stmp1[DAY] != stmp2[DAY]:
+    def _overlaps(self, stmp1: Dict, addr2: int) -> bool:
+        if stmp1[DAY] != ((addr2 & DAY_MASK) >> DAY_SHFT):
             return False
-        if stmp1[START] > stmp2[START]:
-            if stmp1[START] < stmp2[END]:
+        if stmp1[START] > ((addr2 & START_MASK) >> START_SHFT):
+            if stmp1[START] < ((addr2 & END_MASK) >> END_SHFT):
                 return True
-        elif stmp1[END] > stmp2[START]:
+        elif stmp1[END] > ((addr2 & START_MASK) >> START_SHFT):
             return True
         return False
 
@@ -410,43 +410,71 @@ class Scheduler:
                     return self._add_course_fall(crc, state, lec_to_ignore, tut_to_ignore, do_lec, do_tut)
             result_fall = NEW_STATE_ITERATOR_PLACE_HOLDER
             result_winter = NEW_STATE_ITERATOR_PLACE_HOLDER
-            fall_worker = Concurrent_Runner(self._add_course_fall, (crc, state, lec_to_ignore, tut_to_ignore, do_lec, do_tut), -1)
-            winter_worker = Concurrent_Runner(self._add_course_winter, (crc, state, lec_to_ignore, tut_to_ignore, do_lec, do_tut), -1)
-            fall_worker.start()
-            winter_worker.start()
-            fall_priority = None
-            if self._num_fall_crcs < self._num_winter_crcs:
-                fall_priority = True
-            elif self._num_fall_crcs > self._num_winter_crcs:
-                fall_priority = False
+            if state[2][3] < state[2][4] and self._week_balance_invert > 0:
+                if self.data[crc][F][HAS_TUT] and do_tut:
+                    if do_lec:
+                        result_fall = self._state_iterator_fall(self.data[crc][ID], state, 
+                                                   (self.data[crc][ID] + (1 << TYPE_SHFT), None), lec_to_ignore, tut_to_ignore)
+                    else:
+                        result_fall = self._state_iterator_fall(self.data[crc][ID] + (1 << TYPE_SHFT), state, None, lec_to_ignore, tut_to_ignore)
+                elif do_lec:
+                    result_fall = self._state_iterator_fall(self.data[crc][ID], state, None, lec_to_ignore, tut_to_ignore)            
+                if result_fall[0] is None:
+                    if self.data[crc][S][HAS_TUT] and do_tut:
+                        if do_lec:
+                            result_winter = self._state_iterator_winter(self.data[crc][ID] + (1 << SESS_SHFT), state, 
+                                                       (self.data[crc][ID] + (5 << SESS_SHFT), None), lec_to_ignore, tut_to_ignore)
+                        else:
+                            result_winter = self._state_iterator_winter(self.data[crc][ID] + (5 << SESS_SHFT), state, None, lec_to_ignore, tut_to_ignore)
+                    elif do_lec:
+                        result_winter = self._state_iterator_winter(self.data[crc][ID] + (1 << SESS_SHFT), state, None, lec_to_ignore, tut_to_ignore)
+                    return result_winter
+                return result_fall
+            elif state[2][3] > state[2][4] and self._week_balance_invert > 0:
+                if self.data[crc][S][HAS_TUT] and do_tut:
+                    if do_lec:
+                        result_winter = self._state_iterator_winter(self.data[crc][ID] + (1 << SESS_SHFT), state, 
+                                                   (self.data[crc][ID] + (5 << SESS_SHFT), None), lec_to_ignore, tut_to_ignore)
+                    else:
+                        result_winter = self._state_iterator_winter(self.data[crc][ID] + (5 << SESS_SHFT), state, None, lec_to_ignore, tut_to_ignore)
+                elif do_lec:
+                    result_winter = self._state_iterator_winter(self.data[crc][ID] + (1 << SESS_SHFT), state, None, lec_to_ignore, tut_to_ignore)
+                if result_winter[0] is None:
+                    if self.data[crc][F][HAS_TUT] and do_tut:
+                        if do_lec:
+                            result_fall = self._state_iterator_fall(self.data[crc][ID], state, 
+                                                       (self.data[crc][ID] + (1 << TYPE_SHFT), None), lec_to_ignore, tut_to_ignore)
+                        else:
+                            result_fall = self._state_iterator_fall(self.data[crc][ID] + (1 << TYPE_SHFT), state, None, lec_to_ignore, tut_to_ignore)
+                    elif do_lec:
+                        result_fall = self._state_iterator_fall(self.data[crc][ID], state, None, lec_to_ignore, tut_to_ignore)            
+                    return result_fall
+                return result_winter
             else:
-                fall_hrs = 0
-                winter_hrs = 0
-                for i in RANGE_SEVEN:
-                    fall_hrs += state[2][i]
-                    winter_hrs += state[3][i]
-                if fall_hrs < winter_hrs:
-                    fall_priority = True
-                elif fall_hrs > winter_hrs:
-                    fall_priority = False
-            if self._week_balance_invert == 0:
-                fall_priority = not fall_priority
-            while fall_worker.is_alive() or winter_worker.is_alive():
-                time.sleep(SLEEP)
-            result_fall = fall_worker.join()
-            result_winter = winter_worker.join()
-            if result_fall[0] == None:
-                return result_winter
-            elif result_winter[0] == None:
-                return result_fall
-            elif (fall_priority is not None) and fall_priority:
-                return result_fall
-            elif (fall_priority is not None) and not fall_priority:
-                return result_winter
-            elif result_fall[0][4] > result_winter[0][4]:
-                return result_fall
-            else:
-                return result_winter
+                if self.data[crc][F][HAS_TUT] and do_tut:
+                    if do_lec:
+                        result_fall = self._state_iterator_fall(self.data[crc][ID], state, 
+                                                   (self.data[crc][ID] + (1 << TYPE_SHFT), None), lec_to_ignore, tut_to_ignore)
+                    else:
+                        result_fall = self._state_iterator_fall(self.data[crc][ID] + (1 << TYPE_SHFT), state, None, lec_to_ignore, tut_to_ignore)
+                elif do_lec:
+                    result_fall = self._state_iterator_fall(self.data[crc][ID], state, None, lec_to_ignore, tut_to_ignore)            
+                if self.data[crc][S][HAS_TUT] and do_tut:
+                    if do_lec:
+                        result_winter = self._state_iterator_winter(self.data[crc][ID] + (1 << SESS_SHFT), state, 
+                                                   (self.data[crc][ID] + (5 << SESS_SHFT), None), lec_to_ignore, tut_to_ignore)
+                    else:
+                        result_winter = self._state_iterator_winter(self.data[crc][ID] + (5 << SESS_SHFT), state, None, lec_to_ignore, tut_to_ignore)
+                elif do_lec:
+                    result_winter = self._state_iterator_winter(self.data[crc][ID] + (1 << SESS_SHFT), state, None, lec_to_ignore, tut_to_ignore)
+                if result_fall[0] == None:
+                    return result_winter
+                elif result_winter[0] == None:
+                    return result_fall
+                elif result_fall[0][2][2] > result_winter[0][2][2]:
+                    return result_fall
+                else:
+                    return result_winter
 
     def _add_course_fall(self, crc: str, state: List[Tuple, Tuple, List], lec_to_ignore: List[int], tut_to_ignore: List[int], do_lec: bool, do_tut: bool) -> List:
         if self.data[crc][F][HAS_TUT] and do_tut:
@@ -493,7 +521,7 @@ class Scheduler:
                 # NOTE: maximum total iterations ~ 200:
                 for stmp in lec_data:
                     for conflict_addr in state[0][lec_data[stmp][DAY]][1]:
-                        if self._overlaps(lec_data[stmp], state[0][lec_data[stmp][DAY]][1][conflict_addr]) and\
+                        if self._overlaps(lec_data[stmp], conflict_addr) and\
                            ((conflict_addr & CLEAN_MASK) not in attempts) and\
                            self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]] < min_priority:
                             min_priority = self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]]
@@ -545,7 +573,7 @@ class Scheduler:
                 # NOTE: maximum total iterations ~ 200:
                 for stmp in lec_data:
                     for conflict_addr in state[0][lec_data[stmp][DAY]][0]:
-                        if self._overlaps(lec_data[stmp], state[0][lec_data[stmp][DAY]][0][conflict_addr]) and\
+                        if self._overlaps(lec_data[stmp], conflict_addr) and\
                            ((conflict_addr & CLEAN_MASK) not in lec_attempts) and\
                            self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]] < min_priority:
                             min_priority = self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]]
@@ -556,7 +584,7 @@ class Scheduler:
                     week_load = state[2]
                     for stmp in lec_data:
                         week_load[lec_data[stmp][DAY]] += lec_data[stmp][LEN]
-                        state[0][lec_data[stmp][DAY]][type_ind][addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT)] = {DAY:(lec_data[stmp][DAY] << DAY_SHFT), START:(lec_data[stmp][START] << START_SHFT), END:(lec_data[stmp][END] << END_SHFT)}
+                        state[0][lec_data[stmp][DAY]][type_ind].append(addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT))
                     avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
                     week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
                     state[4] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
@@ -613,7 +641,7 @@ class Scheduler:
                 # NOTE: maximum total iterations ~ 200:
                 for stmp in lec_data:
                     for conflict_addr in state[1][lec_data[stmp][DAY]][1]:
-                        if self._overlaps(lec_data[stmp], state[1][lec_data[stmp][DAY]][1][conflict_addr]) and\
+                        if self._overlaps(lec_data[stmp], conflict_addr) and\
                            ((conflict_addr & CLEAN_MASK) not in attempts) and\
                            self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]] < min_priority:
                             min_priority = self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]]
@@ -663,7 +691,7 @@ class Scheduler:
                 # NOTE: maximum total iterations ~ 200:
                 for stmp in lec_data:
                     for conflict_addr in state[1][lec_data[stmp][DAY]][0]:
-                        if self._overlaps(lec_data[stmp], state[1][lec_data[stmp][DAY]][0][conflict_addr]) and\
+                        if self._overlaps(lec_data[stmp], conflict_addr) and\
                            ((conflict_addr & CLEAN_MASK) not in lec_attempts) and\
                            self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]] < min_priority:
                             min_priority = self._priority_map[self.data[ID][conflict_addr & CRC_MASK]][SESS_MAP_R[(conflict_addr & SESS_MASK) >> SESS_SHFT]]
@@ -674,7 +702,7 @@ class Scheduler:
                     week_load = state[3]
                     for stmp in lec_data:
                         week_load[lec_data[stmp][DAY]] += lec_data[stmp][LEN]
-                        state[1][lec_data[stmp][DAY]][type_ind][addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT)] = {DAY:(lec_data[stmp][DAY] << DAY_SHFT), START:(lec_data[stmp][START] << START_SHFT), END:(lec_data[stmp][END] << END_SHFT)}
+                        state[1][lec_data[stmp][DAY]][type_ind].append(addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT))
                     avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
                     week_score = abs(avg - week_load[0]) + abs(avg - week_load[1]) + abs(avg - week_load[2]) + abs(avg - week_load[3]) + abs(avg - week_load[4]) + abs(avg - week_load[5]) + abs(avg - week_load[6])
                     state[4] += self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE]
@@ -737,7 +765,7 @@ class Scheduler:
             state[4] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
             for stmp in lec_data:
                 week_load[lec_data[stmp][DAY]] -= lec_data[stmp][LEN]
-                del state[0][lec_data[stmp][DAY]][type_ind][addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT)]
+                state[0][lec_data[stmp][DAY]][type_ind].remove(addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT))
         if not session == F:
             week_load = state[3]
             avg = (week_load[0] + week_load[1] + week_load[2] + week_load[3] + week_load[4] + week_load[5] + week_load[6]) / 7.0
@@ -745,7 +773,7 @@ class Scheduler:
             state[4] -= (self._week_weight * self._priority_map[crc][session] * abs(self._week_balance_invert - week_score) + self.data[crc][session][type][lec][TSCORE])
             for stmp in lec_data:
                 week_load[lec_data[stmp][DAY]] -= lec_data[stmp][LEN]
-                del state[1][lec_data[stmp][DAY]][type_ind][addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT)]
+                state[1][lec_data[stmp][DAY]][type_ind].remove(addr + (lec_data[stmp][DAY] << DAY_SHFT) + (lec_data[stmp][START] << START_SHFT) + (lec_data[stmp][END] << END_SHFT))
 
     def print_schedule(self, state: List[Tuple, Tuple, List] = None) -> None:
         if state == None:
@@ -1044,14 +1072,14 @@ if __name__ == '__main__':
 
     # -- editable begin --
 
-    crcs = ['mat137Y', 'csc148S', 'eco101A', 'csc197F']
+    crcs = ['mat137Y', 'csc148S', 'eco101A']
     allow_async = False
     sch = Scheduler(crcs, allow_async, 2022)
     timePrefnsFall = [1500]
     timePrefnsWinter = [1500]
     balanced = True
     weights = [0.3, 0.3] # weekscore ~ 7500 in balanced
-    crcPrefns = ['mat137Y', 'csc148S', 'eco101S', 'eco101F', 'csc197F'] # descending priority.
+    crcPrefns = ['mat137Y', 'csc148S', 'eco101S', 'eco101F'] # descending priority.
 
     # -- editable end --
 
@@ -1061,7 +1089,7 @@ if __name__ == '__main__':
         sch.print_schedule()
     # abstraction levels : add_course -> state_iterator -> try_push, accelerate state_iterator only, since, add_course ensures compatibility and try_push ensure validity.
     
-    # change: state -> day -> type -> addr -> lec_data_dict, improved removal complexity and removed decoding headers for data.
+    # TODO: state -> day -> type -> addr -> lec_data_dict, improve removal complexity and remove decoding headers (both already small though).
     # TODO: add acceleration, add greedy mode (estimated score range based)
     # TODO: sort times when printing schedule.
     # TODO: override session relative priority with balance score.

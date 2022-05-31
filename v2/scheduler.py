@@ -1071,8 +1071,8 @@ if __name__ == '__main__':
     crcs = ['mat137Y', 'csc148S', 'eco101A']
     allow_async = False
     sch = Scheduler(crcs, allow_async, 2022)
-    timePrefnsFall = [1200]
-    timePrefnsWinter = [1200]
+    timePrefnsFall = [1500]
+    timePrefnsWinter = [1500]
     balanced = True
     weights = [0.3, 0.3] # weekscore ~ 7500 in balanced
     crcPrefns = ['mat137Y', 'csc148S', 'eco101S', 'eco101F'] # descending priority.
