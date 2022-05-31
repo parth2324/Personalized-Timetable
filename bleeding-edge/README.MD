@@ -1,6 +1,6 @@
 # Release Notes
 
-siginificant optimization for 'A' courses.
+siginificant optimization for 'A' courses : fall and winter concurrent than sequential, but no early return checks yet (more visible in uneven distribution).
 
 not specifing session in courses implies 'A'.
 
